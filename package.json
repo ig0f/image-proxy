@@ -1,0 +1,11 @@
+{
+  "name": "image-proxy",
+  "version": "1.0.0",
+  "description": "Image Proxy for GitHub Pages",
+  "main": "proxy.js",
+  "scripts": {
+    "build": "echo 'No build step required'"
+  },
+  "author": "Your Name",
+  "license": "ISC"
+}
