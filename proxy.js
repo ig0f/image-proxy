@@ -1,32 +1,34 @@
-addEventListener('fetch', event => {
-  event.respondWith(handleRequest(event.request));
-});
-
-async function handleRequest(request) {
-  const url = new URL(request.url);
-  const imageUrl = url.searchParams.get('url');
-
-  if (!imageUrl) {
-    return new Response('Missing "url" parameter', { status: 400 });
-  }
-
-  const modifiedRequest = new Request(imageUrl, {
-    headers: {
-      'Referer': 'https://weibo.com/',
-      ...request.headers
-    },
-    method: 'GET'
-  });
-
-  try {
-    const response = await fetch(modifiedRequest);
-    if (!response.ok) {
-      return new Response('Error fetching image', { status: response.status });
+async function fetchImage(url) {
+    const response = await fetch(`https://image-proxy.ig0f.pages.dev/api/proxy?url=${encodeURIComponent(url)}`);
+    if (response.ok) {
+        return response.blob();
+    } else {
+        throw new Error('Error fetching image');
     }
-    const newResponse = new Response(response.body, response);
-    newResponse.headers.set('Access-Control-Allow-Origin', '*');
-    return newResponse;
-  } catch (error) {
-    return new Response('Error fetching image', { status: 500 });
-  }
 }
+
+async function handleImageRequests(event) {
+    const urlParams = new URLSearchParams(event.request.url.split('?')[1]);
+    const imageUrl = urlParams.get('url');
+
+    if (imageUrl) {
+        try {
+            const imageBlob = await fetchImage(imageUrl);
+            return new Response(imageBlob, {
+                status: 200,
+                headers: {
+                    'Content-Type': imageBlob.type,
+                    'Access-Control-Allow-Origin': '*'
+                }
+            });
+        } catch (error) {
+            return new Response('Error fetching image', { status: 500 });
+        }
+    } else {
+        return new Response('Missing "url" parameter', { status: 400 });
+    }
+}
+
+addEventListener('fetch', event => {
+    event.respondWith(handleImageRequests(event));
+});
